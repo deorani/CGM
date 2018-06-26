@@ -13,7 +13,9 @@ def expand_time(data):
     
     new_data = {'Time' : pd.to_datetime(pd.Series(new_t*1e9)),
                 'Glucose (mmol/L)' : new_g}
-    return pd.DataFrame(new_data)
+    new_data = pd.DataFrame(new_data)
+    new_data['original_data_point'] = new_data['Time'].isin(data['Time'])
+    return new_data
 
 def insert(df, index, values):
     df1 = df[:index]
@@ -21,6 +23,44 @@ def insert(df, index, values):
     values = {k:v for k,v in zip(df.columns.values, values)}
     df1 = df1.append(values,ignore_index=True)
     return pd.concat((df1, df2)).reset_index(drop=True)
+
+
+def add_sleep_info(data, records):
+    sleep_records = records[records['Event_type'] == 'Sleep']
+    i = j = 0
+    sleep_info = [False] * data.shape[0]
+    while i < data.shape[0] and j < sleep_records.shape[0]:
+        if data.iloc[i]['Time'] <= sleep_records.iloc[j]['Start']:
+            i += 1
+        elif data.iloc[i]['Time'] > sleep_records.iloc[j]['Start']:
+            sleep_info[i] = True
+            i += 1
+        if data.iloc[i]['Time'] > sleep_records.iloc[j]['Finish']:
+            j += 1
+            
+    data['is_sleep'] = sleep_info
+    return data
+    
+
+def add_postprandial_info(data, records, time_interval=120):
+    meal_records = records[records['Event_type'] == 'Meal']
+    i = j = 0
+    postprandial_info = [False] * data.shape[0]
+    while i < data.shape[0] and j < meal_records.shape[0]:
+        start = meal_records.iloc[j]['Start']
+        interval_finish = start + timedelta(seconds=60*time_interval)
+        if data.iloc[i]['Time'] <= start:
+            i += 1
+        elif data.iloc[i]['Time'] > start:
+            postprandial_info[i] = True
+            i += 1
+        if data.iloc[i]['Time'] > interval_finish:
+            j += 1
+            
+    data['is_post_prandial'] = postprandial_info
+    return data
+    
+
 
 start_date = datetime(2018, 6, 5)
 end_date = datetime(2018, 6, 18)
@@ -45,6 +85,7 @@ for n, tg in enumerate(time_gaps):
 
 
 data = expand_time(data)
+
 ## read and process records of sleep, meal and activity
 records = pd.read_csv("Continous_glucose_monitoring_praveen.csv")
 read_date = lambda s : datetime.strptime(s, "%d %B %I:%M %p").replace(year=2018)
@@ -56,4 +97,8 @@ events['Event_details'] = events.pop(1).str.strip()
 times = records[['Start', 'Finish']]
 records = pd.concat((times, events), axis=1)
 
+
+## post process glucose data 
+data = add_sleep_info(data, records)
+data = add_postprandial_info(data, records)
 
