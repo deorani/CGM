@@ -1,10 +1,11 @@
 import re
+import os
 from datetime import timedelta
 from copy import deepcopy
 import numpy as np
 import plotly.graph_objs as go
 from plotly.offline import plot
-from read_data import data, records
+from read_data import glucose_data, records
 
 
 
@@ -107,16 +108,16 @@ def get_time_interval_plot(start, records, glucose_data,
     return plot_data
 
 
-def get_comparision_plot(time1, time2, records, 
-                            glucose_data, interval=120):
+def get_comparision_plot(time1, time2, interval=120):
     plot1 = get_time_interval_plot(time1, records, glucose_data, 
                                     glucose_color='rgb(31, 119, 180)',
                                      ypos=1.3, interval=interval)
     plot2 = get_time_interval_plot(time2, records, glucose_data, 
                                     glucose_color='rgb( 196, 78, 82)',
                                      ypos=2.5, interval=interval)
-    return plot1 + plot2
-
+    plot_data = plot1 + plot2
+    
+    return plot_data
 
 def get_animation_frames(plot_data):
     frame = deepcopy(plot_data)
@@ -129,66 +130,81 @@ def get_animation_frames(plot_data):
             {'data' : plot_data, 'name' : 'original'}
             ]
             
+            
+def get_layout():
+    return go.Layout(
+        xaxis={'range': [0, interval],
+               'title' : 'Time (minutes)',
+               'zeroline' : False,
+              },
+        yaxis={'range': [0, 14],
+               'tickvals' : [4,6,8,10,12,14],
+               'title' : 'Glucose (mmol/L)',
+               'zeroline' : False,
+              },
+        hovermode='closest',
+        legend={'x'         : 0.98,
+                'xanchor'   : 'right',
+                'y'         : 0.98,
+                'yanchor'   : 'top'
+                },
+        updatemenus=[{'type'   : 'buttons',
+                      'buttons': [{'label': 'Normalized',
+                                   'method': 'animate',
+                                   'args': [['normalize']]
+                                   },
+                                   {'label': 'Original',
+                                   'method': 'animate',
+                                   'args': [['original']]
+                                   }
+                                 ]
+                            }],
+                                   
+    )
 
+
+def remove_startup_animation(fname):
+    fname = re.sub("\\.then\\(function\\(\\)\\{Plotly\\.animate"
+                    "\\(\\'[0-9a-zA-Z-]*\\'\\)\\;\\}\\)", "", fname)
+    return fname
+
+
+
+    
+def compare_records(record1, record2, interval=120):
+    
+    time1 = records['Start'].iloc[record1]
+    time2 = records['Start'].iloc[record2]
+    plot_data = get_comparision_plot(time1, time2, interval=interval)
+    
+    frames = get_animation_frames(plot_data)
+    layout = get_layout()
+    fig = {'data'   : plot_data,
+           'layout' : layout,
+           'frames' : frames
+           }
+           
+      
+    div = plot(fig, output_type='div')
+    div = remove_startup_animation(div)
+    
+    fname = 'compare-{0}-{1}.html'.format(record1, record2)
+    fname = os.path.join('html', fname) 
+    with open(fname, 'w') as fd:
+        fd.write("""<html>
+        <head>
+        </head>
+        <body>
+            {}
+        </body>
+    </html>
+    """.format(div))
 
 interval = 120
-time1 = records['Start'].iloc[8]
-time2 = records['Start'].iloc[14]
-plot_data = get_comparision_plot(time1, time2, records, data,
-                                    interval=interval)
-frames = get_animation_frames(plot_data)
-
-
-layout = go.Layout(
-    xaxis={'range': [0, interval],
-           'title' : 'Time (minutes)',
-           'zeroline' : False,
-          },
-    yaxis={'range': [0, 14],
-           'tickvals' : [4,6,8,10,12,14],
-           'title' : 'Glucose (mmol/L)',
-           'zeroline' : False,
-          },
-    hovermode='closest',
-    legend={'x'         : 0.98,
-            'xanchor'   : 'right',
-            'y'         : 0.98,
-            'yanchor'   : 'top'
-            },
-    updatemenus=[{'type'   : 'buttons',
-                  'buttons': [{'label': 'Normalized',
-                               'method': 'animate',
-                               'args': [['normalize']]
-                               },
-                               {'label': 'Original',
-                               'method': 'animate',
-                               'args': [['original']]
-                               }
-                             ]
-                        }],
-                               
-)
+compare_records(8, 14, interval=interval)
 
 
 
-fig = {'data'   : plot_data,
-       'layout' : layout,
-       'frames' : frames
-       }
-    
-
-fname = 'compare.html'
-pl1 = plot(fig, output_type='div')
-pl1 = re.sub("\\.then\\(function\\(\\)\\{Plotly\\.animate\\(\\'[0-9a-zA-Z-]*\\'\\)\\;\\}\\)", "", pl1)
-with open(fname, 'w') as fd:
-    fd.write("""<html>
-<head>
-</head>
-<body>
-{}
-</body>
-</html>
-""".format(pl1))
 
 
 

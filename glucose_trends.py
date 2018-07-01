@@ -1,3 +1,4 @@
+import os
 import plotly.graph_objs as go
 from plotly.offline import plot
 from read_data import data, records
@@ -13,7 +14,7 @@ def get_glucose_range(glucose):
     
 
 
-def compare_time_periods(data1, data1_name, data2, data2_name):
+def compare_data_subsets(data1, data1_name, data2, data2_name):
     
     index = ['2 - 4 mmol/L', '4 - 6 mmol/L', '6 - 8 mmol/L', 
                   '8 - 10 mmol/L', '> 10 mmol/L']
@@ -37,24 +38,7 @@ def compare_time_periods(data1, data1_name, data2, data2_name):
     )
 
     plotbar_data = [bar1, bar2]
-    layout = go.Layout(
-                yaxis={
-                       'title' : 'Time (%)',
-                       'hoverformat': '.1f'
-                      },
-                barmode='group',
-                bargap=0.15,
-                bargroupgap=0.1,
-                legend={'x'         : 0.98,
-                        'xanchor'   : 'right',
-                        'y'         : 0.98,
-                        'yanchor'   : 'top'
-                        },                      
-                )
     
-    fig = go.Figure(data=plotbar_data, layout=layout)
-    plot(fig, filename='{0}_vs_{1}_time_bar.html'.format(
-                                            data1_name, data2_name))
     
     data1 = data1[data1['original_data_point']]
     data2 = data2[data2['original_data_point']]
@@ -79,35 +63,45 @@ def compare_time_periods(data1, data1_name, data2, data2_name):
                     name=data2_name
                     )
 
-    
     plotbox_data = [box1, box2]
-
     
     layout = go.Layout(
-                yaxis={'range': [2, 14],
-                       'title' : 'Glucose (mmol/L)',
+                yaxis={
+                       'title' : 'Time (%)',
                        'hoverformat': '.1f'
                       },
                 boxmode='group',
+                barmode='group',
+                bargap=0.15,
+                bargroupgap=0.1,
                 legend={'x'         : 0.98,
                         'xanchor'   : 'right',
                         'y'         : 0.98,
                         'yanchor'   : 'top'
                         },                      
                 )
-    fig = {'data'   : plotbox_data,
-           'layout' : layout,
-           }
-    plot(fig, filename='{0}_vs_{1}_glucose_box_bar.html'.format(
+    
+    figbar = go.Figure(data=plotbar_data, layout=layout)
+    plot(figbar, filename='{0}_vs_{1}_time_bar.html'.format(
                                             data1_name, data2_name))
+
+    
+    layout['yaxis']['title'] = 'Glucose (mmol/L)'
+    figbox = {'data'   : plotbox_data,
+              'layout' : layout,
+             }
+    filename='{0}_vs_{1}_glucose_box_bar.html'.format(
+                                            data1_name, data2_name)
+    filename = os.path.join('html', filename)
+    plot(figbox, )
     
 
-
+data['glucose_range'] = data['Glucose (mmol/L)'].apply(get_glucose_range)
 
 ## comparing sleeep time to awake time
 sleep_data = data[data['is_sleep']]
 awake_data = data[~data['is_sleep']]
-compare_time_periods(sleep_data, 'sleep', awake_data, 'awake')
+compare_data_subsets(sleep_data, 'sleep', awake_data, 'awake')
 
 
 ## comparing weekday to weekend   -- ## excluding 16 and 17th
@@ -116,4 +110,5 @@ data = data[~batam]
 weekend = data['Time'].apply(lambda x: x.weekday() in [5, 6])
 weekend_data = data[weekend]
 weekday_data = data[~weekend]
-compare_time_periods(weekday_data, 'weekday', weekend_data, 'weekend')
+compare_data_subsets(weekday_data, 'weekday', weekend_data, 'weekend')
+

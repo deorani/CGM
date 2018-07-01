@@ -66,25 +66,27 @@ start_date = datetime(2018, 6, 5)
 end_date = datetime(2018, 6, 18)
 
 ## read and process glucose readings
-data = pd.read_csv('libre_data2.txt', sep='\t')
-data['Time'] = data['Time'].apply(datetime.strptime, args=('%Y/%m/%d %H:%M',))
-data = data[(data['Time'] > start_date) 
-            & (data['Time'] <= end_date)]
+glucose_data = pd.read_csv('libre_data2.txt', sep='\t')
+glucose_data['Time'] = glucose_data['Time'].apply(datetime.strptime, 
+                                              args=('%Y/%m/%d %H:%M',))
+glucose_data = glucose_data[(glucose_data['Time'] > start_date) 
+                            & (glucose_data['Time'] <= end_date)]
 
-data = data.sort_values('Time')
-data['Glucose (mmol/L)'] = data['Historic Glucose (mmol/L)'].fillna(
-                                        data['Scan Glucose (mmol/L)']
-                                        )
-data = data[['Time', 'Glucose (mmol/L)']]
+glucose_data = glucose_data.sort_values('Time')
+historic_gl = glucose_data['Historic Glucose (mmol/L)']
+scan_gl = glucose_data['Scan Glucose (mmol/L)']
+glucose_data['Glucose (mmol/L)'] = historic_gl.fillna(scan_gl)
+
+glucose_data = glucose_data[['Time', 'Glucose (mmol/L)']]
 
 
-time_gaps = np.where(data['Time'].diff() > timedelta(minutes=20))[0]
+time_gaps = np.where(glucose_data['Time'].diff() > timedelta(minutes=20))[0]
 for n, tg in enumerate(time_gaps):
-    mid_time = data['Time'].iloc[tg+n-1] + timedelta(minutes=10)
-    data = insert(data, tg+n, values=[mid_time, np.NaN])
+    mid_time = glucose_data['Time'].iloc[tg+n-1] + timedelta(minutes=10)
+    glucose_data = insert(glucose_data, tg+n, values=[mid_time, np.NaN])
 
 
-data = expand_time(data)
+glucose_data = expand_time(glucose_data)
 
 ## read and process records of sleep, meal and activity
 records = pd.read_csv("Continous_glucose_monitoring_praveen.csv")
@@ -99,6 +101,7 @@ records = pd.concat((times, events), axis=1)
 
 
 ## post process glucose data 
-data = add_sleep_info(data, records)
-data = add_postprandial_info(data, records)
+glucose_data = add_sleep_info(glucose_data, records)
+glucose_data = add_postprandial_info(glucose_data, records)
+
 

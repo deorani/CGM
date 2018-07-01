@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 import numpy as np
 import plotly.graph_objs as go
@@ -72,4 +73,4 @@ fig = go.Figure(
         data=plot_data,
         layout=layout
     )
-plot(fig, filename='full_data.html')
+plot(fig, filename=os.path.join('html', 'full_data.html'))
