@@ -1,7 +1,7 @@
 import os
 import plotly.graph_objs as go
 from plotly.offline import plot
-from read_data import data, records
+from read_data import glucose_data, records
 
 def get_glucose_range(glucose):
     if glucose < 2:
@@ -82,33 +82,36 @@ def compare_data_subsets(data1, data1_name, data2, data2_name):
                 )
     
     figbar = go.Figure(data=plotbar_data, layout=layout)
-    plot(figbar, filename='{0}_vs_{1}_time_bar.html'.format(
-                                            data1_name, data2_name))
+    if not os.path.exists('html'):
+        os.mkdir('html')
+    filename='{0}_vs_{1}_time_bar.html'.format(data1_name, data2_name)
+    filename = os.path.join('html', filename)
+    plot(figbar, filename)
 
     
     layout['yaxis']['title'] = 'Glucose (mmol/L)'
     figbox = {'data'   : plotbox_data,
               'layout' : layout,
              }
-    filename='{0}_vs_{1}_glucose_box_bar.html'.format(
-                                            data1_name, data2_name)
+    filename='{0}_vs_{1}_glucose_box_bar.html'.format(data1_name, data2_name)   
     filename = os.path.join('html', filename)
-    plot(figbox, )
+    plot(figbox, filename=filename)
     
 
-data['glucose_range'] = data['Glucose (mmol/L)'].apply(get_glucose_range)
+glucose_data['glucose_range'] = glucose_data['Glucose (mmol/L)'].apply(
+                                                        get_glucose_range)
 
 ## comparing sleeep time to awake time
-sleep_data = data[data['is_sleep']]
-awake_data = data[~data['is_sleep']]
+sleep_data = glucose_data[glucose_data['is_sleep']]
+awake_data = glucose_data[~glucose_data['is_sleep']]
 compare_data_subsets(sleep_data, 'sleep', awake_data, 'awake')
 
 
 ## comparing weekday to weekend   -- ## excluding 16 and 17th
-batam = data['Time'].apply(lambda x: x.day in [16, 17])
-data = data[~batam]
-weekend = data['Time'].apply(lambda x: x.weekday() in [5, 6])
-weekend_data = data[weekend]
-weekday_data = data[~weekend]
+batam = glucose_data['Time'].apply(lambda x: x.day in [16, 17])
+glucose_data = glucose_data[~batam]
+weekend = glucose_data['Time'].apply(lambda x: x.weekday() in [5, 6])
+weekend_data = glucose_data[weekend]
+weekday_data = glucose_data[~weekend]
 compare_data_subsets(weekday_data, 'weekday', weekend_data, 'weekend')
 

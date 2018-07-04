@@ -1,11 +1,10 @@
 import os
 from datetime import datetime, timedelta
 import numpy as np
+import pandas as pd
 import plotly.graph_objs as go
 from plotly.offline import plot
-from read_data import data, records
-
-
+from read_data import glucose_data, records
 
 
 def get_date_button(date):
@@ -22,7 +21,7 @@ def get_records_plot(record, color='rgba( 179, 181, 194, 0.2)'):
                     time_step_size)
     y = [15]*x.shape[0]
     record_plot = go.Scatter(
-            x=x,
+            x=pd.Series(x),
             y=y,
             fill='tozeroy',
             mode='none',
@@ -34,12 +33,12 @@ def get_records_plot(record, color='rgba( 179, 181, 194, 0.2)'):
     return record_plot
 
     
-start_date = datetime(2018, 6, 5)
+start_date = datetime(2018, 6, 5) + timedelta(seconds=60*60*8)
 
 
 glucose_plot = go.Scatter(
-        x=data['Time'], 
-        y=data['Glucose (mmol/L)'],
+        x=glucose_data['Time'], 
+        y=glucose_data['Glucose (mmol/L)'],
         name='Glucose (mmol/L)',
         hoverinfo='y',
         line={'color': '#1f77b4'},
@@ -73,4 +72,7 @@ fig = go.Figure(
         data=plot_data,
         layout=layout
     )
+
+if not os.path.exists('html'):
+        os.mkdir('html')
 plot(fig, filename=os.path.join('html', 'full_data.html'))

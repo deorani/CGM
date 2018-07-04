@@ -135,6 +135,7 @@ def get_layout():
     return go.Layout(
         xaxis={'range': [0, interval],
                'title' : 'Time (minutes)',
+               'tickvals' : [0, 60, 120, 180, 240],
                'zeroline' : False,
               },
         yaxis={'range': [0, 14],
@@ -190,6 +191,8 @@ def compare_records(record1, record2, interval=120):
     
     fname = 'compare-{0}-{1}.html'.format(record1, record2)
     fname = os.path.join('html', fname) 
+    if not os.path.exists('html'):
+        os.mkdir('html.')
     with open(fname, 'w') as fd:
         fd.write("""<html>
         <head>
@@ -200,8 +203,14 @@ def compare_records(record1, record2, interval=120):
     </html>
     """.format(div))
 
-interval = 120
+interval = 240
 compare_records(8, 14, interval=interval)
+compare_records(18, 22, interval=interval)
+compare_records(4, 13, interval=interval)
+compare_records(32, 48, interval=interval)
+compare_records(26, 57, interval=interval)
+compare_records(26, 68, interval=interval)
+
 
 
 
