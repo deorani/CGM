@@ -64,7 +64,8 @@ def add_postprandial_info(data, records, time_interval=120):
 
 def read_cgm_data(fname, start_date, end_date):
     ## read and process glucose readings
-    cgm_data = pd.read_csv('libre_data.txt', sep='\t')
+    cgm_raw_file = os.path.join('data', 'raw', 'libre_data.txt')
+    cgm_data = pd.read_csv(cgm_raw_file, sep='\t')
     time_reader = lambda s: datetime.strptime(s,'%Y/%m/%d %H:%M')
     cgm_data['Time'] = cgm_data['Time'].apply(time_reader)
     cgm_data = cgm_data[(cgm_data['Time'] > start_date)
@@ -95,7 +96,17 @@ def read_praveen_records():
         t = datetime.strptime(s, "%d/%m/%y %H:%M")
         return t
 
-    records = pd.read_csv("records_praveen.csv")
+    records = pd.read_csv(os.path.join('data', 'raw', 'records_praveen.csv'))
+    records['Start'] = records['Start'].apply(time_reader)
+    records['Finish'] = records['Finish'].apply(time_reader)
+    return records
+
+def read_cherwee_records():
+    def time_reader(s):
+        t = datetime.strptime(s, "%d/%m/%y %H:%M")
+        return t
+
+    records = pd.read_csv(os.path.join('data', 'raw', 'records_cherwee.csv'))
     records['Start'] = records['Start'].apply(time_reader)
     records['Finish'] = records['Finish'].apply(time_reader)
     return records
@@ -108,7 +119,7 @@ def read_angela_records():
         t = t.replace(year=2018)
         return t
 
-    records = pd.read_csv("records_angela.csv")
+    records = pd.read_csv(os.path.join('data', 'raw', 'records_angela.csv'))
     records['Start'] = records['Start'].apply(time_reader)
     records['Finish'] = records['Finish'].apply(time_reader)
     return records
@@ -119,7 +130,7 @@ def read_yq_records():
         t = datetime.strptime(s, '%Y/%m/%d %H:%M')
         return t
 
-    records = pd.read_csv("records_yq.csv")
+    records = pd.read_csv(os.path.join('data', 'raw', 'records_yq.csv'))
     records['Start'] = records['Start'].apply(time_reader)
     records['Finish'] = (records['Start']
                         + pd.to_timedelta(records['duration'], unit='m'))
@@ -139,18 +150,17 @@ def mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-#praveen
+
 def get_data(user):
-    cwd = os.getcwd()
-    records_file = os.path.join(cwd, 'pkl', '{}_records.pkl'.format(user))
-    cgm_file = os.path.join(cwd, 'pkl', '{}_cgm.pkl'.format(user))
+    records_file = os.path.join('data', 'pkl', '{}_records.pkl'.format(user))
+    cgm_file = os.path.join('data', 'pkl', '{}_cgm.pkl'.format(user))
 
     if os.path.exists(records_file):
         records = pd.read_pickle(records_file)
     else:
         records = config[user]['records_reader']()
         records = process_records(records)
-        mkdir('pkl')
+        mkdir(os.path.join('data', 'pkl'))
         records.to_pickle(records_file)
 
     if os.path.exists(cgm_file):
@@ -160,23 +170,27 @@ def get_data(user):
         end_date = config[user]['end_date']
         cgm_data = read_cgm_data('libre_data.txt', start_date, end_date)
         cgm_data = process_cgm_data(cgm_data, records)
-        mkdir('pkl')
+        mkdir(os.path.join('data', 'pkl'))
         cgm_data.to_pickle(cgm_file)
 
     return records, cgm_data
 
 
 config = {
-          'praveen' :   {'start_date' : datetime(2018, 6, 5),
+          'Praveen' :   {'start_date' : datetime(2018, 6, 5),
                          'end_date' : datetime(2018, 6, 18),
                          'records_reader' : read_praveen_records
                         },
-          'angela'  :   {'start_date' : datetime(2018, 7, 23),
+          'Angela'  :   {'start_date' : datetime(2018, 7, 23),
                          'end_date' : datetime(2018, 8, 6),
                          'records_reader' : read_angela_records
                         },
-           'yq'     :    {'start_date' : datetime(2018, 5, 17),
+           'YQ'     :    {'start_date' : datetime(2018, 5, 17),
                          'end_date' : datetime(2018, 5, 31),
                          'records_reader' : read_yq_records
+                        },
+           'Cher Wee' : {'start_date' : datetime(2018, 6, 26),
+                         'end_date' : datetime(2018, 7, 10),
+                         'records_reader' : read_cherwee_records
                         }
 }

@@ -33,7 +33,7 @@ def get_records_plot(record, color='rgba( 179, 181, 194, 0.2)'):
     return record_plot
 
 
-user = 'yq'
+user = 'Cher Wee'
 start_date = config[user]['start_date'] + timedelta(seconds=60*60*8)
 records, cgm_data = get_data(user)
 
@@ -64,8 +64,10 @@ updatemenus=[{ 'buttons' : buttons }]
 layout = go.Layout(
     xaxis={'range': [start_date, start_date + timedelta(1)]},
     yaxis={'range': [2, 14],
-           'title' : 'Glucose (mmol/L)'
+           'title' : 'Glucose (mmol/L)',
+           'hoverformat' : '.1f'
           },
+    plot_bgcolor='rgba(0,0,0,0)',
     updatemenus=updatemenus,
     hoverdistance=1
 )
@@ -77,4 +79,5 @@ fig = go.Figure(
 
 if not os.path.exists('html'):
         os.mkdir('html')
-plot(fig, filename=os.path.join('html', 'full_data_{}.html'.format(user)))
+plot(fig, show_link=False,
+        filename=os.path.join('html', 'full_data_{}.html'.format(user)))
